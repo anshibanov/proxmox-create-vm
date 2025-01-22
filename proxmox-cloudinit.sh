@@ -198,7 +198,7 @@ qm importdisk "${VMID}" "${TEMPIMAGE}" "${STORAGE}" --format qcow2
 # Привязываем диск к SCSI
 qm set "${VMID}" \
     --scsihw virtio-scsi-pci \
-    --scsi0 "${STORAGE}:${VMID}/vm-${VMID}-disk-0.qcow2"
+    --scsi0 "${STORAGE}:${VMID}/vm-${VMID}-disk-0.raw"
 
 qm set "${VMID}" --ide2 "${STORAGE}:cloudinit"
 
