@@ -12,11 +12,12 @@
 
 ###############################################################################
 # Общие настройки
-
 # Выходим из скрипта, если какая-либо команда вернула ошибку (set -e),
 # при обращении к неинициализированной переменной (set -u),
-# и если ошибка в конвейере (set -o pipefail).
-set -euox pipefail
+# и если ошибка в конвейере (set -o pipefail) -x для отладки
+
+set -euox pipefail  # -e, -u, -o pipefail и 
+
 ###############################################################################
 # 1. Чтение .env и преобразование некоторых переменных
 
@@ -28,8 +29,7 @@ else
     exit 1
 fi
 
-# Преобразуем USERS и KEYS в массивы, если они нужны
-# (В .env они указаны как пробел-разделённые строки).
+# Преобразуем USERS и KEYS в массивы (если нужно)
 IFS=' ' read -r -a USERS_ARRAY <<< "${USERS:-}"
 IFS=' ' read -r -a KEYS_ARRAY <<< "${KEYS:-}"
 
@@ -70,10 +70,9 @@ aria2c --allow-overwrite=true \
 ###############################################################################
 # 5. Дополнительные настройки на основе дистрибутива
 
-# Переводим имя образа в нижний регистр
 imagelower=$(echo "$IMAGENAME" | tr '[:upper:]' '[:lower:]')
 
-# Начнём с дефолта (например, для Ubuntu/Debian)
+# Дефолт для Ubuntu/Debian
 PACKAGES="qemu-guest-agent,mc,cron,avahi-daemon,htop"
 SUDOGROUP="sudo"
 
@@ -87,7 +86,7 @@ fi
 if [[ "$imagelower" == *"alma"* || "$imagelower" == *"red"* ]]; then
   PACKAGES="qemu-guest-agent,mc,avahi-tools"
   SUDOGROUP="wheel"
-  VMMEM=1024        # Переопределяем память
+  VMMEM=1024
   CIUSER="almalinux"
 fi
 
@@ -101,9 +100,8 @@ virt-customize -a "${TEMPIMAGE}" --install "${PACKAGES}"
 virt-customize -a "${TEMPIMAGE}" --run-command 'systemctl enable qemu-guest-agent'
 
 ###############################################################################
-# 7. Создаём скрипт для регистрации в Consul и добавляем его в cron
+# 7. Скрипт для регистрации в Consul и cron
 
-# Локальный скрипт
 cat > /tmp/register_service.sh << 'EOF'
 #!/bin/bash
 LOCAL_IP=$(hostname -I | awk '{print $1}')
@@ -113,40 +111,32 @@ EOF
 
 chmod +x /tmp/register_service.sh
 
-# Копируем в образ
 virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/register_service.sh:/usr/local/bin/
 
-# Создаём cron задание (каждую минуту)
 echo "* * * * * root /usr/local/bin/register_service.sh" > /tmp/cronjob
-
-# Копируем cron задание в образ
 virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/cronjob:/etc/cron.d/
 
 ###############################################################################
 # 8. Создание пользователей и вставка SSH-ключей
 
 for USER in "${USERS_ARRAY[@]}"; do
-    # Создаём пользователя
     virt-customize -a "${TEMPIMAGE}" \
         --run-command "useradd -m -d /home/${USER} -s /bin/bash -G ${SUDOGROUP} ${USER}"
 
-    # Папка .ssh
     virt-customize -a "${TEMPIMAGE}" \
         --run-command "mkdir -p /home/${USER}/.ssh"
 
-    # Если у нас есть отдельный ключ вида user.pub
     if [ -f "${USER}.pub" ]; then
         virt-customize -a "${TEMPIMAGE}" --ssh-inject "${USER}:file:${USER}.pub"
     fi
 
-    # # Если нужно несколько ключей (из массива KEYS_ARRAY), раскомментируйте цикл:
+    # Если нужно несколько ключей (из массива KEYS_ARRAY), можно раскомментировать:
     # for KEY in "${KEYS_ARRAY[@]}"; do
     #   if [ -f "${KEY}" ]; then
     #     virt-customize -a "${TEMPIMAGE}" --ssh-inject "${USER}:file:${KEY}"
     #   fi
     # done
 
-    # Право собственности
     virt-customize -a "${TEMPIMAGE}" \
         --run-command "chown -R ${USER}:${USER} /home/${USER}"
 done
@@ -154,9 +144,7 @@ done
 ###############################################################################
 # 9. Настройка sudo без пароля
 
-# Файл sudoers (подставляем группу $SUDOGROUP)
 echo "%${SUDOGROUP} ALL=(ALL) NOPASSWD:ALL" > /tmp/sudoers-nopasswd
-
 virt-customize -a "${TEMPIMAGE}" \
     --copy-in /tmp/sudoers-nopasswd:/etc/sudoers.d/
 
@@ -173,25 +161,72 @@ virt-customize -a "${TEMPIMAGE}" \
     --run-command 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config'
 
 ###############################################################################
-# 11. Удаляем machine-id (рекомендуется для Cloud-Init шаблонов)
+# 11. Конфигурация постоянных маршрутов
+
+# Если переменная ROUTES не пуста, создадим файл /etc/custom_routes
+# и systemd unit, который выполнит его после загрузки сети.
+
+if [[ -n "${ROUTES:-}" ]]; then
+  echo "Добавляем постоянные маршруты из .env..."
+
+  # 11.1. Скрипт, в котором будут команды ip route add ...
+  cat > /tmp/custom_routes <<EOF
+#!/bin/bash
+# Пользовательские маршруты, добавленные из .env
+${ROUTES}
+EOF
+
+  # Копируем его в образ
+  virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/custom_routes:/etc/custom_routes
+
+  # Делаем исполняемым
+  virt-customize -a "${TEMPIMAGE}" \
+      --run-command 'chmod +x /etc/custom_routes'
+
+  # 11.2. Создаём systemd unit, чтобы запускать /etc/custom_routes
+  cat > /tmp/add-routes.service <<EOF
+[Unit]
+Description=Add custom routes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/custom_routes
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # Копируем unit-файл
+  virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/add-routes.service:/etc/systemd/system/
+
+  # Включаем сервис при старте
+  virt-customize -a "${TEMPIMAGE}" \
+      --run-command 'systemctl enable add-routes.service'
+else
+  echo "Переменная ROUTES не задана, пропускаем настройку постоянных маршрутов."
+fi
+
+###############################################################################
+# 12. Удаляем machine-id (рекомендуется для Cloud-Init шаблонов)
 
 virt-customize -a "${TEMPIMAGE}" \
     --run-command 'truncate -s 0 /etc/machine-id'
 
 ###############################################################################
-# 12. Удаляем/чистим старую VM в Proxmox (если была)
+# 13. Удаляем/чистим старую VM в Proxmox (если была)
 
 qm destroy "${VMID}" --destroy-unreferenced-disks 1 --purge 1 || true
 
 ###############################################################################
-# 13. Создаём новую VM и импортируем диск
+# 14. Создаём новую VM и импортируем диск
 
 qm create "${VMID}" --name "${VMNAME}" --memory "${VMMEM}" ${VMSETTINGS}
 qm set   "${VMID}" --description "Template date: ${CURRENT_DATE}"
 qm set   "${VMID}" --cpu host
 
-# Импорт диска
-#qm importdisk "${VMID}" "${TEMPIMAGE}" "${STORAGE}"
 qm importdisk "${VMID}" "${TEMPIMAGE}" "${STORAGE}"
 
 # Привязываем диск к SCSI
@@ -200,8 +235,6 @@ qm set "${VMID}" \
     --scsi0 "${STORAGE}:vm-${VMID}-disk-0"
 
 qm set "${VMID}" --ide2 "${STORAGE}:cloudinit"
-
-# Задаём параметры загрузки
 qm set "${VMID}" --boot c --bootdisk scsi0
 
 # Cloud-Init опции (пользователь, пароль, DHCP и т.д.)
@@ -214,23 +247,23 @@ qm set "${VMID}" --serial0 socket --vga std
 qm cloudinit update "${VMID}"
 
 ###############################################################################
-# 14. Преобразуем VM в шаблон
+# 15. Преобразуем VM в шаблон
 
 qm template "${VMID}"
 
 ###############################################################################
-# 15. Удаляем старый образ и переименовываем временный
+# 16. Удаляем старый образ и переименовываем временный
 
 rm -f "${IMAGENAME}"
 mv "${TEMPIMAGE}" "${IMAGENAME}"
 
 ###############################################################################
-# 16. Логируем время последнего запуска
+# 17. Логируем время последнего запуска
 
 echo "Last run: ${CURRENT_DATE}" > "${BASENAME}-last-run.txt"
 
 ###############################################################################
-# 17. Финальное сообщение
+# 18. Финальное сообщение
 
 echo "TEMPLATE ${VMNAME} (ID ${VMID}) successfully created!"
 echo "Now create a clone of this VM in the Proxmox Webinterface (or via CLI)."
