@@ -163,9 +163,6 @@ virt-customize -a "${TEMPIMAGE}" \
 ###############################################################################
 # 11. Конфигурация постоянных маршрутов
 
-# Если переменная ROUTES не пуста, создадим файл /etc/custom_routes
-# и systemd unit, который выполнит его после загрузки сети.
-
 if [[ -n "${ROUTES:-}" ]]; then
   echo "Добавляем постоянные маршруты из .env..."
 
@@ -176,8 +173,9 @@ if [[ -n "${ROUTES:-}" ]]; then
 ${ROUTES}
 EOF
 
-  # Копируем его в образ
-  virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/custom_routes:/etc/custom_routes
+  # Копируем его в образ (загружаем как /etc/custom_routes)
+  virt-customize -a "${TEMPIMAGE}" \
+      --upload /tmp/custom_routes:/etc/custom_routes
 
   # Делаем исполняемым
   virt-customize -a "${TEMPIMAGE}" \
@@ -199,8 +197,9 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-  # Копируем unit-файл
-  virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/add-routes.service:/etc/systemd/system/
+  # Копируем unit-файл (здесь ок использовать --copy-in, потому что /etc/systemd/system/ — это каталог)
+  virt-customize -a "${TEMPIMAGE}" \
+      --copy-in /tmp/add-routes.service:/etc/systemd/system/
 
   # Включаем сервис при старте
   virt-customize -a "${TEMPIMAGE}" \
@@ -208,6 +207,7 @@ EOF
 else
   echo "Переменная ROUTES не задана, пропускаем настройку постоянных маршрутов."
 fi
+
 
 ###############################################################################
 # 12. Удаляем machine-id (рекомендуется для Cloud-Init шаблонов)
