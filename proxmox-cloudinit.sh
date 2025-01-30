@@ -166,25 +166,19 @@ virt-customize -a "${TEMPIMAGE}" \
 if [[ -n "${ROUTES:-}" ]]; then
   echo "Добавляем постоянные маршруты из .env через systemd-networkd..."
 
-  # 11.1. Определяем имя сетевого интерфейса
-  INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
-  if [[ -z "$INTERFACE" ]]; then
-      echo "Error: Не удалось определить сетевой интерфейс."
-      exit 1
-  fi
-
   # 11.2. Создаем drop-in конфигурацию маршрутов
   ROUTES_FILE="/etc/systemd/network/10-static-routes.network"
   cat > /tmp/10-static-routes.network <<EOF
 [Match]
-Name=$INTERFACE
+Name=eth0
 
 [Network]
+DHCP=yes
 EOF
 
   # Парсим маршруты из переменной ROUTES
   while IFS= read -r route; do
-      DEST=$(echo "$route" | awk '{print $3}')
+      DEST=$(echo "$route" | awk '{print $4}')
       GATEWAY=$(echo "$route" | awk '{print $6}')
       echo "[Route]" >> /tmp/10-static-routes.network
       echo "Destination=${DEST}" >> /tmp/10-static-routes.network
