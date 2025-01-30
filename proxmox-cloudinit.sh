@@ -161,49 +161,44 @@ virt-customize -a "${TEMPIMAGE}" \
     --run-command 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config'
 
 ###############################################################################
-# 11. Конфигурация постоянных маршрутов
+# 11. Конфигурация постоянных маршрутов через systemd-networkd
 
 if [[ -n "${ROUTES:-}" ]]; then
-  echo "Добавляем постоянные маршруты из .env..."
+  echo "Добавляем постоянные маршруты из .env через systemd-networkd..."
 
-  # 11.1. Скрипт, в котором будут команды ip route add ...
-  cat > /tmp/custom_routes <<EOF
-#!/bin/bash
-# Пользовательские маршруты, добавленные из .env
-${ROUTES}
+  # 11.1. Определяем имя сетевого интерфейса
+  INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
+  if [[ -z "$INTERFACE" ]]; then
+      echo "Error: Не удалось определить сетевой интерфейс."
+      exit 1
+  fi
+
+  # 11.2. Создаем drop-in конфигурацию маршрутов
+  ROUTES_FILE="/etc/systemd/network/10-static-routes.network"
+  cat > /tmp/10-static-routes.network <<EOF
+[Match]
+Name=$INTERFACE
+
+[Network]
 EOF
 
-  # Копируем его в образ (загружаем как /etc/custom_routes)
+  # Парсим маршруты из переменной ROUTES
+  while IFS= read -r route; do
+      DEST=$(echo "$route" | awk '{print $3}')
+      GATEWAY=$(echo "$route" | awk '{print $6}')
+      echo "[Route]" >> /tmp/10-static-routes.network
+      echo "Destination=${DEST}" >> /tmp/10-static-routes.network
+      echo "Gateway=${GATEWAY}" >> /tmp/10-static-routes.network
+      echo "" >> /tmp/10-static-routes.network
+  done <<< "$ROUTES"
+
+  # Копируем конфиг-файл в образ
   virt-customize -a "${TEMPIMAGE}" \
-      --upload /tmp/custom_routes:/etc/custom_routes
+      --copy-in /tmp/10-static-routes.network:/etc/systemd/network/
 
-  # Делаем исполняемым
+  # Перезапускаем systemd-networkd
   virt-customize -a "${TEMPIMAGE}" \
-      --run-command 'chmod +x /etc/custom_routes'
-
-  # 11.2. Создаём systemd unit, чтобы запускать /etc/custom_routes
-  cat > /tmp/add-routes.service <<EOF
-[Unit]
-Description=Add custom routes
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/etc/custom_routes
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  # Копируем unit-файл (здесь ок использовать --copy-in, потому что /etc/systemd/system/ — это каталог)
-  virt-customize -a "${TEMPIMAGE}" \
-      --copy-in /tmp/add-routes.service:/etc/systemd/system/
-
-  # Включаем сервис при старте
-  virt-customize -a "${TEMPIMAGE}" \
-      --run-command 'systemctl enable add-routes.service'
+      --run-command 'systemctl enable systemd-networkd && systemctl restart systemd-networkd'
 else
   echo "Переменная ROUTES не задана, пропускаем настройку постоянных маршрутов."
 fi
