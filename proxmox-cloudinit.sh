@@ -100,23 +100,6 @@ virt-customize -a "${TEMPIMAGE}" --install "${PACKAGES}"
 virt-customize -a "${TEMPIMAGE}" --run-command 'systemctl enable qemu-guest-agent'
 
 ###############################################################################
-# 7. Скрипт для регистрации в Consul и cron
-
-cat > /tmp/register_service.sh << 'EOF'
-#!/bin/bash
-LOCAL_IP=$(hostname -I | awk '{print $1}')
-XHOSTNAME=$(hostname)
-curl -H "Content-Type: application/json" -X PUT -d "{\"ID\": \"$XHOSTNAME\",\"Name\": \"$XHOSTNAME\", \"Address\": \"$LOCAL_IP\"}" http://consul.lan:8500/v1/agent/service/register
-EOF
-
-chmod +x /tmp/register_service.sh
-
-virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/register_service.sh:/usr/local/bin/
-
-echo "* * * * * root /usr/local/bin/register_service.sh" > /tmp/cronjob
-virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/cronjob:/etc/cron.d/
-
-###############################################################################
 # 8. Создание пользователей и вставка SSH-ключей
 
 for USER in "${USERS_ARRAY[@]}"; do
@@ -161,43 +144,76 @@ virt-customize -a "${TEMPIMAGE}" \
     --run-command 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config'
 
 ###############################################################################
+
 ###############################################################################
-# 11. Настройка постоянных маршрутов через if-up.d
+# 11. Настройка постоянных маршрутов через cron-задачу
 
-# Проверяем, есть ли у нас массив ROUTES и не пуст ли он
+# Проверим, есть ли у нас массив / список ROUTES
 if [ -n "${ROUTES:-}" ]; then
-    echo "Configuring static routes via /etc/network/if-up.d/99_static_routes.sh"
+    echo "Configuring static routes via cron job"
 
-    # Создаём скрипт локально
-    # Обратите внимание, что здесь мы берём из массива ROUTES
-    cat <<EOF > /tmp/99_static_routes.sh
+    # 1) Создаём локальный скрипт, который будет проверять и при необходимости добавлять маршруты
+    # Предположим, что у нас в .env ROUTES записан в виде массива:
+    #
+    #   ROUTES=(
+    #   "192.168.2.0/24 via 192.168.20.5"
+    #   "10.0.10.0/24 via 10.0.20.1"
+    #   )
+    #
+    # Если у вас одиночная строка — нужно слегка иначе парсить.
+    cat << 'EOF' > /tmp/ensure_routes.sh
 #!/bin/bash
-# Простая проверка, чтобы скрипт срабатывал только на "реальных" интерфейсах, а не на lo
-if [ "\$IFACE" = "lo" ]; then
-    exit 0
-fi
 
-# Добавляем маршруты
+# Здесь вы можете напрямую “зашить” маршруты,
+# либо мы их передадим, сгенерировав данный файл динамически.
+
+# Пример статических маршрутов:
+declare -a ROUTES=(
 EOF
 
-    # Циклом дописываем все нужные ip route add
+    # Теперь циклом вписываем строки из массива bash:
     for route in "${ROUTES[@]}"; do
-        echo "ip route add ${route}" >> /tmp/99_static_routes.sh
+        # route - например: "192.168.2.0/24 via 192.168.20.5"
+        echo "\"$route\"" >> /tmp/ensure_routes.sh
     done
 
-    # Делаем скрипт исполняемым
-    chmod +x /tmp/99_static_routes.sh
+    # Закрываем массив и прописываем логику проверки
+    cat << 'EOF' >> /tmp/ensure_routes.sh
+)
 
-    # Копируем скрипт внутрь временного образа
-    virt-customize -a "${TEMPIMAGE}" \
-        --copy-in /tmp/99_static_routes.sh:/etc/network/if-up.d/
+for route in "${ROUTES[@]}"; do
+  # Простейший способ проверки: ищем ровно такую строку 'dest via gateway' в 'ip route show'
+  # Если такой подстроки нет, добавляем маршрут
+  if ! ip route show | grep -q "$route"; then
+    ip route add $route
+  fi
+done
+
+EOF
+
+    # Устанавливаем права на исполнение
+    chmod +x /tmp/ensure_routes.sh
+
+    # 2) Копируем скрипт в образ
+    virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/ensure_routes.sh:/usr/local/bin/
 
     # На всякий случай назначим нужные права и владельца (root:root) уже внутри образа
     virt-customize -a "${TEMPIMAGE}" \
-        --run-command 'chown root:root /etc/network/if-up.d/99_static_routes.sh && chmod 755 /etc/network/if-up.d/99_static_routes.sh'
+      --run-command 'chown root:root /usr/local/bin/ensure_routes.sh && chmod 755 /usr/local/bin/ensure_routes.sh'
+
+    # 3) Создаём cron-файл, который будет вызываться каждую минуту от root
+    echo "* * * * * root /usr/local/bin/ensure_routes.sh" > /tmp/cronjob
+
+    # Копируем cronjob в директорию /etc/cron.d
+    virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/cronjob:/etc/cron.d/
+
+    # На всякий случай права
+    virt-customize -a "${TEMPIMAGE}" \
+      --run-command 'chown root:root /etc/cron.d/cronjob && chmod 644 /etc/cron.d/cronjob'
 fi
 
 ###############################################################################
+
 
 # 12. Удаляем machine-id (рекомендуется для Cloud-Init шаблонов)
 
