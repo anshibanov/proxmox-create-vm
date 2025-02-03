@@ -161,44 +161,44 @@ virt-customize -a "${TEMPIMAGE}" \
     --run-command 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config'
 
 ###############################################################################
-# 11. Конфигурация постоянных маршрутов через systemd-networkd
+###############################################################################
+# 11. Настройка постоянных маршрутов через if-up.d
 
-if [[ -n "${ROUTES:-}" ]]; then
-  echo "Добавляем постоянные маршруты из .env через systemd-networkd..."
+# Проверяем, есть ли у нас массив ROUTES и не пуст ли он
+if [ -n "${ROUTES:-}" ]; then
+    echo "Configuring static routes via /etc/network/if-up.d/99_static_routes.sh"
 
-  # 11.2. Создаем drop-in конфигурацию маршрутов
-  ROUTES_FILE="/etc/systemd/network/10-static-routes.network"
-  cat > /tmp/10-static-routes.network <<EOF
-[Match]
-Name=eth0
-
-[Network]
-DHCP=yes
-EOF
-
-  # Парсим маршруты из переменной ROUTES
-  while IFS= read -r route; do
-      DEST=$(echo "$route" | awk '{print $4}')
-      GATEWAY=$(echo "$route" | awk '{print $6}')
-      echo "[Route]" >> /tmp/10-static-routes.network
-      echo "Destination=${DEST}" >> /tmp/10-static-routes.network
-      echo "Gateway=${GATEWAY}" >> /tmp/10-static-routes.network
-      echo "" >> /tmp/10-static-routes.network
-  done <<< "$ROUTES"
-
-  # Копируем конфиг-файл в образ
-  virt-customize -a "${TEMPIMAGE}" \
-      --copy-in /tmp/10-static-routes.network:/etc/systemd/network/
-
-  # Перезапускаем systemd-networkd
-  virt-customize -a "${TEMPIMAGE}" \
-      --run-command 'systemctl enable systemd-networkd && systemctl restart systemd-networkd'
-else
-  echo "Переменная ROUTES не задана, пропускаем настройку постоянных маршрутов."
+    # Создаём скрипт локально
+    # Обратите внимание, что здесь мы берём из массива ROUTES
+    cat <<EOF > /tmp/99_static_routes.sh
+#!/bin/bash
+# Простая проверка, чтобы скрипт срабатывал только на "реальных" интерфейсах, а не на lo
+if [ "\$IFACE" = "lo" ]; then
+    exit 0
 fi
 
+# Добавляем маршруты
+EOF
+
+    # Циклом дописываем все нужные ip route add
+    for route in "${ROUTES[@]}"; do
+        echo "ip route add ${route}" >> /tmp/99_static_routes.sh
+    done
+
+    # Делаем скрипт исполняемым
+    chmod +x /tmp/99_static_routes.sh
+
+    # Копируем скрипт внутрь временного образа
+    virt-customize -a "${TEMPIMAGE}" \
+        --copy-in /tmp/99_static_routes.sh:/etc/network/if-up.d/
+
+    # На всякий случай назначим нужные права и владельца (root:root) уже внутри образа
+    virt-customize -a "${TEMPIMAGE}" \
+        --run-command 'chown root:root /etc/network/if-up.d/99_static_routes.sh && chmod 755 /etc/network/if-up.d/99_static_routes.sh'
+fi
 
 ###############################################################################
+
 # 12. Удаляем machine-id (рекомендуется для Cloud-Init шаблонов)
 
 virt-customize -a "${TEMPIMAGE}" \
