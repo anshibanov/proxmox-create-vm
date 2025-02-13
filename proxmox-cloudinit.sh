@@ -235,10 +235,11 @@ qm set   "${VMID}" --cpu host
 # Импортируем диск в указанный datastore (local)
 qm importdisk "${VMID}" "${TEMPIMAGE}" "${STORAGE}"
 
-# Привязываем диск к SCSI
+# Привязываем диск к SCSI.
+# Для хранилища типа Directory имя тома должно содержать папку VMID и расширение .raw
 qm set "${VMID}" \
     --scsihw virtio-scsi-pci \
-    --scsi0 "${STORAGE}:vm-${VMID}-disk-0"
+    --scsi0 "${STORAGE}:${VMID}/vm-${VMID}-disk-0.raw"
 
 qm set "${VMID}" --ide2 "${STORAGE}:cloudinit"
 qm set "${VMID}" --boot c --bootdisk scsi0
