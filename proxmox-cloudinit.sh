@@ -16,7 +16,7 @@
 # при обращении к неинициализированной переменной (set -u),
 # и если ошибка в конвейере (set -o pipefail) -x для отладки
 
-set -euox pipefail  # -e, -u, -o pipefail и 
+set -euox pipefail  # -e, -u, -o pipefail и -x
 
 ###############################################################################
 # 1. Чтение .env и преобразование некоторых переменных
@@ -28,6 +28,10 @@ else
     echo "Error: .env file not found!"
     exit 1
 fi
+
+# Задаём datastore, который будем использовать в Proxmox.
+# В данном случае используем хранилище с именем 'local' типа Directory.
+STORAGE="local"
 
 # Преобразуем USERS и KEYS в массивы (если нужно)
 IFS=' ' read -r -a USERS_ARRAY <<< "${USERS:-}"
@@ -144,8 +148,6 @@ virt-customize -a "${TEMPIMAGE}" \
     --run-command 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config'
 
 ###############################################################################
-
-###############################################################################
 # 11. Настройка постоянных маршрутов через cron-задачу
 
 # Проверим, есть ли у нас массив / список ROUTES
@@ -213,8 +215,6 @@ EOF
 fi
 
 ###############################################################################
-
-
 # 12. Удаляем machine-id (рекомендуется для Cloud-Init шаблонов)
 
 virt-customize -a "${TEMPIMAGE}" \
@@ -232,6 +232,7 @@ qm create "${VMID}" --name "${VMNAME}" --memory "${VMMEM}" ${VMSETTINGS}
 qm set   "${VMID}" --description "Template date: ${CURRENT_DATE}"
 qm set   "${VMID}" --cpu host
 
+# Импортируем диск в указанный datastore (local)
 qm importdisk "${VMID}" "${TEMPIMAGE}" "${STORAGE}"
 
 # Привязываем диск к SCSI
