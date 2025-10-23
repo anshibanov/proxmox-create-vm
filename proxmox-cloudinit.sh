@@ -1,14 +1,6 @@
 #!/bin/bash
 #
 # Скрипт для создания шаблона Ubuntu/Debian/AlmaLinux Cloud-Init VM в Proxmox
-# Использует данные из .env, а также требует 4 аргумента:
-#   1) <image_name> - имя файла образа (например, ubuntu-20.04.img)
-#   2) <image_url>  - URL каталога, где лежит образ (например, https://cloud-images.ubuntu.com/focal/current)
-#   3) <vm_name>    - имя для создаваемой VM (например, ubuntu-20.04-template)
-#   4) <vm_id>      - ID для Proxmox (например, 9001)
-#
-# Пример запуска:
-#   ./create_vm_template.sh ubuntu-20.04.img https://cloud-images.ubuntu.com/focal/current ubuntu-20.04-template 9001
 
 ###############################################################################
 # Общие настройки
@@ -21,7 +13,7 @@ if [ -f .env ]; then
     # shellcheck disable=SC1091
     source .env
 else
-    echo "Error: .env file not found!"
+    echo "Error: .env file not found!" >&2
     exit 1
 fi
 
@@ -36,10 +28,9 @@ detect_storage() {
     local storage_name=""
     local storage_type=""
     
-    echo "Detecting suitable storage for VM images..."
+    echo "Detecting suitable storage for VM images..." >&2
     
     # Получаем список storage, которые поддерживают content type 'images'
-    # Формат вывода: Name Type Status Total Used Available %
     while IFS= read -r line; do
         # Пропускаем строки с ошибками и заголовок
         if [[ "$line" =~ ^(Name|storage) ]] || [[ -z "$line" ]]; then
@@ -53,15 +44,15 @@ detect_storage() {
         
         # Проверяем, что storage активен
         if [[ "$storage_status" == "active" ]]; then
-            echo "Found suitable storage: $storage_name (type: $storage_type)"
+            echo "Found suitable storage: $storage_name (type: $storage_type)" >&2
             echo "$storage_name:$storage_type"
             return 0
         fi
     done < <(pvesm status -content images 2>/dev/null | tail -n +2)
     
     # Если ничего не найдено, пробуем без фильтра и ищем вручную
-    echo "Warning: No active storage found via pvesm status."
-    echo "Attempting to parse /etc/pve/storage.cfg..."
+    echo "Warning: No active storage found via pvesm status." >&2
+    echo "Attempting to parse /etc/pve/storage.cfg..." >&2
     
     # Парсим storage.cfg напрямую
     local current_storage=""
@@ -69,7 +60,7 @@ detect_storage() {
     
     while IFS= read -r line; do
         # Начало нового storage
-        if [[ "$line" =~ ^(dir|lvmthin|lvm|zfspool|nfs|cifs|rbd|cephfs|btrfs|lvm|iscsi):\ (.+)$ ]]; then
+        if [[ "$line" =~ ^(dir|lvmthin|lvm|zfspool|nfs|cifs|rbd|cephfs|btrfs|iscsi):\ (.+)$ ]]; then
             # Если предыдущий storage поддерживал images, возвращаем его
             if [[ $has_images -eq 1 ]] && [[ -n "$current_storage" ]]; then
                 echo "$current_storage:$storage_type"
@@ -93,7 +84,7 @@ detect_storage() {
         return 0
     fi
     
-    echo "Error: No suitable storage found for VM images!"
+    echo "Error: No suitable storage found for VM images!" >&2
     exit 1
 }
 
@@ -102,7 +93,7 @@ detect_storage() {
 
 for cmd in aria2c virt-customize qm; do
   command -v "$cmd" >/dev/null 2>&1 || { 
-    echo "Error: '$cmd' not found, install it before running this script."
+    echo "Error: '$cmd' not found, install it before running this script." >&2
     exit 1
   }
 done
@@ -111,7 +102,7 @@ done
 # 4. Парсим аргументы
 
 if [ "$#" -ne 4 ]; then
-    echo "Usage: $0 <image_name> <image_url> <vm_name> <vm_id>"
+    echo "Usage: $0 <image_name> <image_url> <vm_name> <vm_id>" >&2
     exit 1
 fi
 
@@ -131,7 +122,7 @@ STORAGE_INFO=$(detect_storage)
 STORAGE=$(echo "$STORAGE_INFO" | cut -d: -f1)
 STORAGE_TYPE=$(echo "$STORAGE_INFO" | cut -d: -f2)
 
-echo "Using storage: $STORAGE (type: $STORAGE_TYPE)"
+echo "Using storage: $STORAGE (type: $STORAGE_TYPE)" >&2
 
 ###############################################################################
 # 6. Загрузка образа
@@ -211,7 +202,7 @@ virt-customize -a "${TEMPIMAGE}" \
 # 12. Настройка постоянных маршрутов через cron-задачу
 
 if [ -n "${ROUTES:-}" ]; then
-    echo "Configuring static routes via cron job"
+    echo "Configuring static routes via cron job" >&2
 
     cat << 'EOF' > /tmp/ensure_routes.sh
 #!/bin/bash
@@ -287,7 +278,7 @@ case "$STORAGE_TYPE" in
         ;;
     *)
         # Универсальный вариант - пытаемся определить автоматически
-        echo "Unknown storage type: $STORAGE_TYPE. Attempting automatic detection..."
+        echo "Unknown storage type: $STORAGE_TYPE. Attempting automatic detection..." >&2
         qm set "${VMID}" \
             --scsihw virtio-scsi-pci \
             --scsi0 "${STORAGE}:vm-${VMID}-disk-0"
@@ -325,12 +316,12 @@ echo "Last run: ${CURRENT_DATE}" > "${BASENAME}-last-run.txt"
 ###############################################################################
 # 19. Финальное сообщение
 
-echo "=========================================="
-echo "TEMPLATE CREATED SUCCESSFULLY!"
-echo "=========================================="
-echo "VM Name:    ${VMNAME}"
-echo "VM ID:      ${VMID}"
-echo "Storage:    ${STORAGE} (${STORAGE_TYPE})"
-echo "Date:       ${CURRENT_DATE}"
-echo "=========================================="
-echo "Now create a clone of this VM in the Proxmox Webinterface (or via CLI)."
+echo "==========================================" >&2
+echo "TEMPLATE CREATED SUCCESSFULLY!" >&2
+echo "==========================================" >&2
+echo "VM Name:    ${VMNAME}" >&2
+echo "VM ID:      ${VMID}" >&2
+echo "Storage:    ${STORAGE} (${STORAGE_TYPE})" >&2
+echo "Date:       ${CURRENT_DATE}" >&2
+echo "==========================================" >&2
+echo "Now create a clone of this VM in the Proxmox Webinterface (or via CLI)." >&2
