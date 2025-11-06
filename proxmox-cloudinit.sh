@@ -237,10 +237,12 @@ EOF
 fi
 
 ###############################################################################
-# 13. Удаляем machine-id
+# 13. Очищаем machine-id и SSH host keys для уникальности клонов
 
 virt-customize -a "${TEMPIMAGE}" \
-    --run-command 'truncate -s 0 /etc/machine-id'
+    --run-command 'truncate -s 0 /etc/machine-id' \
+    --run-command 'rm -f /var/lib/dbus/machine-id' \
+    --run-command 'rm -f /etc/ssh/ssh_host_*'
 
 ###############################################################################
 # 14. Удаляем старую VM в Proxmox (если была)

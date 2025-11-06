@@ -1,0 +1,307 @@
+
+11/06 16:04:54 [[1;32mNOTICE[0m] Downloading 1 item(s)
+
+11/06 16:04:55 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://chuangtzu.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+[#fbe554 0B/0B CN:1 DL:0B]
+
+11/06 16:04:56 [[1;32mNOTICE[0m] CUID#9 - Redirecting to https://chuangtzu.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+
+11/06 16:04:56 [[1;32mNOTICE[0m] CUID#12 - Redirecting to https://chuangtzu.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+
+11/06 16:04:56 [[1;32mNOTICE[0m] CUID#10 - Redirecting to https://chuangtzu.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+
+11/06 16:04:56 [[1;32mNOTICE[0m] CUID#11 - Redirecting to https://chuangtzu.ftp.acc.umu.se/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+[#fbe554 2.7MiB/427MiB(0%) CN:5 DL:4.0MiB ETA:1m46s]
+[#fbe554 12MiB/427MiB(2%) CN:5 DL:7.3MiB ETA:56s]
+[#fbe554 22MiB/427MiB(5%) CN:5 DL:8.4MiB ETA:48s]
+[#fbe554 32MiB/427MiB(7%) CN:5 DL:8.8MiB ETA:44s]
+[#fbe554 42MiB/427MiB(9%) CN:5 DL:9.0MiB ETA:42s]
+[#fbe554 52MiB/427MiB(12%) CN:5 DL:9.3MiB ETA:40s]
+[#fbe554 63MiB/427MiB(14%) CN:5 DL:9.5MiB ETA:38s]
+[#fbe554 73MiB/427MiB(17%) CN:5 DL:9.6MiB ETA:36s]
+[#fbe554 82MiB/427MiB(19%) CN:5 DL:9.5MiB ETA:36s]
+[#fbe554 90MiB/427MiB(21%) CN:5 DL:9.4MiB ETA:35s]
+[#fbe554 101MiB/427MiB(23%) CN:5 DL:9.9MiB ETA:32s]
+[#fbe554 111MiB/427MiB(26%) CN:5 DL:10MiB ETA:31s]
+[#fbe554 122MiB/427MiB(28%) CN:5 DL:10MiB ETA:30s]
+[#fbe554 133MiB/427MiB(31%) CN:5 DL:10MiB ETA:28s]
+[#fbe554 143MiB/427MiB(33%) CN:5 DL:10MiB ETA:27s]
+[#fbe554 151MiB/427MiB(35%) CN:5 DL:9.8MiB ETA:28s]
+[#fbe554 159MiB/427MiB(37%) CN:5 DL:9.4MiB ETA:28s]
+[#fbe554 168MiB/427MiB(39%) CN:5 DL:9.3MiB ETA:27s]
+[#fbe554 175MiB/427MiB(41%) CN:5 DL:9.2MiB ETA:27s]
+[#fbe554 182MiB/427MiB(42%) CN:5 DL:9.1MiB ETA:26s]
+[#fbe554 186MiB/427MiB(43%) CN:5 DL:8.2MiB ETA:29s]
+[#fbe554 196MiB/427MiB(45%) CN:5 DL:8.1MiB ETA:28s]
+[#fbe554 203MiB/427MiB(47%) CN:5 DL:7.7MiB ETA:29s]
+[#fbe554 206MiB/427MiB(48%) CN:5 DL:7.0MiB ETA:31s]
+[#fbe554 218MiB/427MiB(50%) CN:5 DL:7.1MiB ETA:29s]
+[#fbe554 224MiB/427MiB(52%) CN:5 DL:6.8MiB ETA:29s]
+[#fbe554 232MiB/427MiB(54%) CN:5 DL:7.4MiB ETA:26s]
+[#fbe554 241MiB/427MiB(56%) CN:5 DL:7.3MiB ETA:25s]
+[#fbe554 249MiB/427MiB(58%) CN:5 DL:7.5MiB ETA:23s]
+[#fbe554 257MiB/427MiB(60%) CN:5 DL:7.7MiB ETA:21s]
+[#fbe554 270MiB/427MiB(63%) CN:5 DL:8.1MiB ETA:19s]
+[#fbe554 277MiB/427MiB(64%) CN:5 DL:8.0MiB ETA:18s]
+[#fbe554 288MiB/427MiB(67%) CN:5 DL:8.6MiB ETA:16s]
+[#fbe554 295MiB/427MiB(69%) CN:5 DL:8.5MiB ETA:15s]
+[#fbe554 300MiB/427MiB(70%) CN:5 DL:8.2MiB ETA:15s]
+[#fbe554 308MiB/427MiB(72%) CN:5 DL:8.2MiB ETA:14s]
+[#fbe554 315MiB/427MiB(73%) CN:5 DL:8.1MiB ETA:13s]
+[#fbe554 323MiB/427MiB(75%) CN:5 DL:7.9MiB ETA:13s]
+[#fbe554 331MiB/427MiB(77%) CN:5 DL:8.0MiB ETA:11s]
+[#fbe554 340MiB/427MiB(79%) CN:5 DL:7.6MiB ETA:11s]
+[#fbe554 347MiB/427MiB(81%) CN:5 DL:7.6MiB ETA:10s]
+[#fbe554 357MiB/427MiB(83%) CN:5 DL:7.9MiB ETA:8s]
+[#fbe554 367MiB/427MiB(85%) CN:5 DL:7.9MiB ETA:7s]
+[#fbe554 377MiB/427MiB(88%) CN:5 DL:8.5MiB ETA:5s]
+[#fbe554 387MiB/427MiB(90%) CN:5 DL:8.7MiB ETA:4s]
+[#fbe554 395MiB/427MiB(92%) CN:4 DL:8.7MiB ETA:3s]
+[#fbe554 403MiB/427MiB(94%) CN:4 DL:8.7MiB ETA:2s]
+[#fbe554 419MiB/427MiB(97%) CN:4 DL:9.5MiB]
+[#fbe554 427MiB/427MiB(99%) CN:1 DL:9.5MiB]
+
+11/06 16:05:45 [[1;32mNOTICE[0m] Download complete: /opt/cloudinit/debian-12-generic-amd64.qcow2.new
+
+Download Results:
+gid   |stat|avg speed  |path/URI
+======+====+===========+=======================================================
+fbe554|OK  |   8.6MiB/s|/opt/cloudinit/debian-12-generic-amd64.qcow2.new
+
+Status Legend:
+(OK):download completed.
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Setting the machine ID in /etc/machine-id
+[   3.3] Installing packages: qemu-guest-agent mc cron avahi-daemon htop
+[ 100.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: systemctl enable qemu-guest-agent
+[   3.5] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: useradd -m -d /home/byak -s /bin/bash -G sudo byak
+[   3.8] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: mkdir -p /home/byak/.ssh
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] SSH key inject: byak
+[   4.2] Finishing off
+[   0.0] Examining the guest ...
+[   3.2] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: chown -R byak:byak /home/byak
+[   3.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: useradd -m -d /home/admin_init -s /bin/bash -G sudo admin_init
+[   3.6] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: mkdir -p /home/admin_init/.ssh
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] SSH key inject: admin_init
+[   4.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: chown -R admin_init:admin_init /home/admin_init
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: useradd -m -d /home/orange -s /bin/bash -G sudo orange
+[   3.6] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: mkdir -p /home/orange/.ssh
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] SSH key inject: orange
+[   4.2] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: chown -R orange:orange /home/orange
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Copying: /tmp/sudoers-nopasswd to /etc/sudoers.d/
+[   3.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.2] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: sed -i "s/#PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config
+[   3.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.2] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Copying: /tmp/ensure_routes.sh to /usr/local/bin/
+[   3.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: chown root:root /usr/local/bin/ensure_routes.sh && chmod 755 /usr/local/bin/ensure_routes.sh
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Copying: /tmp/cronjob to /etc/cron.d/
+[   3.3] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: chown root:root /etc/cron.d/cronjob && chmod 644 /etc/cron.d/cronjob
+[   3.4] Finishing off
+[   0.0] Examining the guest ...
+[   3.3] Setting a random seed
+virt-customize: warning: random seed could not be set for this type of guest
+[   3.3] Running: truncate -s 0 /etc/machine-id
+[   3.4] Finishing off
+purging VM 9002 from related configurations..
+update VM 9002: -description Template date: 20251106-160453
+update VM 9002: -cpu host
+importing disk 'debian-12-generic-amd64.qcow2.new' to VM 9002 ...
+Formatting '/mnt/raid/vm_raid_pool/images/9002/vm-9002-disk-0.raw', fmt=raw size=3221225472 preallocation=off
+transferred 0.0 B of 3.0 GiB (0.00%)
+transferred 31.0 MiB of 3.0 GiB (1.01%)
+transferred 61.7 MiB of 3.0 GiB (2.01%)
+transferred 92.5 MiB of 3.0 GiB (3.01%)
+transferred 123.5 MiB of 3.0 GiB (4.02%)
+transferred 155.4 MiB of 3.0 GiB (5.06%)
+transferred 186.5 MiB of 3.0 GiB (6.07%)
+transferred 217.2 MiB of 3.0 GiB (7.07%)
+transferred 247.9 MiB of 3.0 GiB (8.07%)
+transferred 278.9 MiB of 3.0 GiB (9.08%)
+transferred 309.7 MiB of 3.0 GiB (10.08%)
+transferred 340.4 MiB of 3.0 GiB (11.08%)
+transferred 371.4 MiB of 3.0 GiB (12.09%)
+transferred 402.1 MiB of 3.0 GiB (13.09%)
+transferred 432.8 MiB of 3.0 GiB (14.09%)
+transferred 463.9 MiB of 3.0 GiB (15.10%)
+transferred 494.6 MiB of 3.0 GiB (16.10%)
+transferred 525.3 MiB of 3.0 GiB (17.10%)
+transferred 557.3 MiB of 3.0 GiB (18.14%)
+transferred 592.0 MiB of 3.0 GiB (19.27%)
+transferred 626.4 MiB of 3.0 GiB (20.39%)
+transferred 660.2 MiB of 3.0 GiB (21.49%)
+transferred 692.4 MiB of 3.0 GiB (22.54%)
+transferred 726.8 MiB of 3.0 GiB (23.66%)
+transferred 757.6 MiB of 3.0 GiB (24.66%)
+transferred 792.0 MiB of 3.0 GiB (25.78%)
+transferred 826.7 MiB of 3.0 GiB (26.91%)
+transferred 858.0 MiB of 3.0 GiB (27.93%)
+transferred 892.1 MiB of 3.0 GiB (29.04%)
+transferred 925.3 MiB of 3.0 GiB (30.12%)
+transferred 959.7 MiB of 3.0 GiB (31.24%)
+transferred 991.3 MiB of 3.0 GiB (32.27%)
+transferred 1022.4 MiB of 3.0 GiB (33.28%)
+transferred 1.0 GiB of 3.0 GiB (34.28%)
+transferred 1.1 GiB of 3.0 GiB (35.38%)
+transferred 1.1 GiB of 3.0 GiB (36.51%)
+transferred 1.1 GiB of 3.0 GiB (37.51%)
+transferred 1.2 GiB of 3.0 GiB (38.51%)
+transferred 1.2 GiB of 3.0 GiB (39.52%)
+transferred 1.2 GiB of 3.0 GiB (40.52%)
+transferred 1.2 GiB of 3.0 GiB (41.52%)
+transferred 1.3 GiB of 3.0 GiB (42.53%)
+transferred 1.3 GiB of 3.0 GiB (43.53%)
+transferred 1.3 GiB of 3.0 GiB (44.53%)
+transferred 1.4 GiB of 3.0 GiB (45.54%)
+transferred 1.4 GiB of 3.0 GiB (46.54%)
+transferred 1.4 GiB of 3.0 GiB (47.54%)
+transferred 1.5 GiB of 3.0 GiB (48.55%)
+transferred 1.5 GiB of 3.0 GiB (49.55%)
+transferred 1.5 GiB of 3.0 GiB (50.56%)
+transferred 1.5 GiB of 3.0 GiB (51.57%)
+transferred 1.6 GiB of 3.0 GiB (52.57%)
+transferred 1.6 GiB of 3.0 GiB (53.57%)
+transferred 1.6 GiB of 3.0 GiB (54.58%)
+transferred 1.7 GiB of 3.0 GiB (55.58%)
+transferred 1.7 GiB of 3.0 GiB (56.58%)
+transferred 1.7 GiB of 3.0 GiB (57.59%)
+transferred 1.8 GiB of 3.0 GiB (58.59%)
+transferred 1.8 GiB of 3.0 GiB (59.59%)
+transferred 1.8 GiB of 3.0 GiB (60.59%)
+transferred 1.8 GiB of 3.0 GiB (61.60%)
+transferred 1.9 GiB of 3.0 GiB (62.60%)
+transferred 1.9 GiB of 3.0 GiB (63.60%)
+transferred 1.9 GiB of 3.0 GiB (64.61%)
+transferred 2.0 GiB of 3.0 GiB (65.61%)
+transferred 2.0 GiB of 3.0 GiB (66.61%)
+transferred 2.0 GiB of 3.0 GiB (67.62%)
+transferred 2.1 GiB of 3.0 GiB (68.64%)
+transferred 2.1 GiB of 3.0 GiB (69.64%)
+transferred 2.1 GiB of 3.0 GiB (70.65%)
+transferred 2.1 GiB of 3.0 GiB (71.65%)
+transferred 2.2 GiB of 3.0 GiB (72.65%)
+transferred 2.2 GiB of 3.0 GiB (73.66%)
+transferred 2.2 GiB of 3.0 GiB (74.66%)
+transferred 2.3 GiB of 3.0 GiB (75.66%)
+transferred 2.3 GiB of 3.0 GiB (76.67%)
+transferred 2.3 GiB of 3.0 GiB (77.67%)
+transferred 2.4 GiB of 3.0 GiB (78.67%)
+transferred 2.4 GiB of 3.0 GiB (79.68%)
+transferred 2.4 GiB of 3.0 GiB (80.68%)
+transferred 2.5 GiB of 3.0 GiB (81.68%)
+transferred 2.5 GiB of 3.0 GiB (82.69%)
+transferred 2.5 GiB of 3.0 GiB (83.69%)
+transferred 2.5 GiB of 3.0 GiB (84.69%)
+transferred 2.6 GiB of 3.0 GiB (85.70%)
+transferred 2.6 GiB of 3.0 GiB (86.70%)
+transferred 2.6 GiB of 3.0 GiB (87.70%)
+transferred 2.7 GiB of 3.0 GiB (88.71%)
+transferred 2.7 GiB of 3.0 GiB (89.75%)
+transferred 2.7 GiB of 3.0 GiB (90.75%)
+transferred 2.8 GiB of 3.0 GiB (91.76%)
+transferred 2.8 GiB of 3.0 GiB (92.76%)
+transferred 2.8 GiB of 3.0 GiB (93.76%)
+transferred 2.8 GiB of 3.0 GiB (94.76%)
+transferred 2.9 GiB of 3.0 GiB (95.77%)
+transferred 2.9 GiB of 3.0 GiB (96.77%)
+transferred 2.9 GiB of 3.0 GiB (97.77%)
+transferred 3.0 GiB of 3.0 GiB (98.79%)
+transferred 3.0 GiB of 3.0 GiB (99.80%)
+transferred 3.0 GiB of 3.0 GiB (100.00%)
+transferred 3.0 GiB of 3.0 GiB (100.00%)
+unused0: successfully imported disk 'RAID:9002/vm-9002-disk-0.raw'
+update VM 9002: -scsi0 RAID:9002/vm-9002-disk-0.raw -scsihw virtio-scsi-pci
+update VM 9002: -ide2 RAID:cloudinit
+Formatting '/mnt/raid/vm_raid_pool/images/9002/vm-9002-cloudinit.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off preallocation=metadata compression_type=zlib size=4194304 lazy_refcounts=off refcount_bits=16
+ide2: successfully created disk 'RAID:9002/vm-9002-cloudinit.qcow2,media=cdrom'
+generating cloud-init ISO
+update VM 9002: -boot c -bootdisk scsi0
+update VM 9002: -cipassword <hidden> -ciuser admin_init
+update VM 9002: -ipconfig0 ip=dhcp
+update VM 9002: -agent 1
+update VM 9002: -serial0 socket -vga std
+generating cloud-init ISO
+{"id":"o6Nx9bzC8ipv","time":1762420153,"expires":1762463353,"event":"message","topic":"orange-proxmox-templates","message":"Finished debian processing","tags":["heavy_check_mark"]}
