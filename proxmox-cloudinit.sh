@@ -8,10 +8,19 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Общие настройки
 set -euox pipefail
 
+# Создаём временную директорию для безопасной работы с временными файлами
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
 ###############################################################################
 # 1. Чтение .env
 
-if [ -f .env ]; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ -f "${SCRIPT_DIR}/.env" ]; then
+    # shellcheck disable=SC1091
+    source "${SCRIPT_DIR}/.env"
+elif [ -f .env ]; then
     # shellcheck disable=SC1091
     source .env
 else
@@ -19,9 +28,20 @@ else
     exit 1
 fi
 
-# Преобразуем USERS и KEYS в массивы
+# Преобразуем USERS в массив
 IFS=' ' read -r -a USERS_ARRAY <<< "${USERS:-}"
-IFS=' ' read -r -a KEYS_ARRAY <<< "${KEYS:-}"
+
+# Значения по умолчанию для критических переменных
+VMMEM="${VMMEM:-512}"
+CIUSER="${CIUSER:-admin}"
+CIPASSWORD="${CIPASSWORD:-}"
+VMSETTINGS="${VMSETTINGS:-}"
+
+# Проверка обязательных переменных
+if [ -z "$CIPASSWORD" ]; then
+    echo "Error: CIPASSWORD must be set in .env" >&2
+    exit 1
+fi
 
 ###############################################################################
 # 2. Функция для определения подходящего storage
@@ -29,21 +49,21 @@ IFS=' ' read -r -a KEYS_ARRAY <<< "${KEYS:-}"
 detect_storage() {
     local storage_name=""
     local storage_type=""
-    
+
     echo "Detecting suitable storage for VM images..." >&2
-    
+
     # Получаем список storage, которые поддерживают content type 'images'
     while IFS= read -r line; do
         # Пропускаем строки с ошибками и заголовок
         if [[ "$line" =~ ^(Name|storage) ]] || [[ -z "$line" ]]; then
             continue
         fi
-        
+
         # Парсим первое слово (имя storage) и второе (тип)
         storage_name=$(echo "$line" | awk '{print $1}')
         storage_type=$(echo "$line" | awk '{print $2}')
         storage_status=$(echo "$line" | awk '{print $3}')
-        
+
         # Проверяем, что storage активен
         if [[ "$storage_status" == "active" ]]; then
             echo "Found suitable storage: $storage_name (type: $storage_type)" >&2
@@ -51,15 +71,15 @@ detect_storage() {
             return 0
         fi
     done < <(pvesm status -content images 2>/dev/null | tail -n +2)
-    
+
     # Если ничего не найдено, пробуем без фильтра и ищем вручную
     echo "Warning: No active storage found via pvesm status." >&2
     echo "Attempting to parse /etc/pve/storage.cfg..." >&2
-    
+
     # Парсим storage.cfg напрямую
     local current_storage=""
     local has_images=0
-    
+
     while IFS= read -r line; do
         # Начало нового storage
         if [[ "$line" =~ ^(dir|lvmthin|lvm|zfspool|nfs|cifs|rbd|cephfs|btrfs|iscsi):\ (.+)$ ]]; then
@@ -68,24 +88,24 @@ detect_storage() {
                 echo "$current_storage:$storage_type"
                 return 0
             fi
-            
+
             storage_type="${BASH_REMATCH[1]}"
             current_storage="${BASH_REMATCH[2]}"
             has_images=0
         fi
-        
+
         # Проверяем content
         if [[ "$line" =~ content.*images ]]; then
             has_images=1
         fi
     done < /etc/pve/storage.cfg
-    
+
     # Проверяем последний storage
     if [[ $has_images -eq 1 ]] && [[ -n "$current_storage" ]]; then
         echo "$current_storage:$storage_type"
         return 0
     fi
-    
+
     echo "Error: No suitable storage found for VM images!" >&2
     exit 1
 }
@@ -94,17 +114,23 @@ detect_storage() {
 # 3. Проверка наличия необходимых инструментов
 
 for cmd in aria2c virt-customize qm; do
-  command -v "$cmd" >/dev/null 2>&1 || { 
+  command -v "$cmd" >/dev/null 2>&1 || {
     echo "Error: '$cmd' not found, install it before running this script." >&2
     exit 1
   }
 done
 
 ###############################################################################
-# 4. Парсим аргументы
+# 4. Парсим и валидируем аргументы
 
 if [ "$#" -ne 4 ]; then
     echo "Usage: $0 <image_name> <image_url> <vm_name> <vm_id>" >&2
+    echo "" >&2
+    echo "Arguments:" >&2
+    echo "  image_name  - Name of the cloud image file (e.g., debian-12-generic-amd64.qcow2)" >&2
+    echo "  image_url   - Base URL to download the image from" >&2
+    echo "  vm_name     - Name for the VM template" >&2
+    echo "  vm_id       - Numeric VM ID (must be >= 100)" >&2
     exit 1
 fi
 
@@ -113,7 +139,17 @@ IMAGEURL=$2
 VMNAME=$3
 VMID=$4
 
-BASENAME="${IMAGENAME%.*}"
+# Валидация VMID
+if ! [[ "$VMID" =~ ^[0-9]+$ ]]; then
+    echo "Error: VMID must be a positive integer, got: $VMID" >&2
+    exit 1
+fi
+
+if [ "$VMID" -lt 100 ]; then
+    echo "Error: VMID must be >= 100 (Proxmox reserves 0-99), got: $VMID" >&2
+    exit 1
+fi
+
 CURRENT_DATE=$(date +"%Y%m%d-%H%M%S")
 TEMPIMAGE="${IMAGENAME}.new"
 
@@ -141,64 +177,66 @@ aria2c --allow-overwrite=true \
 
 imagelower=$(echo "$IMAGENAME" | tr '[:upper:]' '[:lower:]')
 
-# Дефолт для Ubuntu/Debian
+# Дефолтные значения (Ubuntu/Debian)
 PACKAGES="qemu-guest-agent,mc,cron,avahi-daemon,htop"
 SUDOGROUP="sudo"
 
-if [[ "$imagelower" == *"ubuntu"* || "$imagelower" == *"debian"* || "$IMAGEURL" == *"ubuntu"* ]]; then
-  PACKAGES="qemu-guest-agent,mc,cron,avahi-daemon,htop"
-  SUDOGROUP="sudo"
-fi
-
+# Специфичные настройки для AlmaLinux/RHEL
 if [[ "$imagelower" == *"alma"* || "$imagelower" == *"red"* ]]; then
-  PACKAGES="qemu-guest-agent,mc,avahi-tools"
-  SUDOGROUP="wheel"
-  VMMEM=1024
-  CIUSER="almalinux"
+    PACKAGES="qemu-guest-agent,mc,avahi-tools"
+    SUDOGROUP="wheel"
 fi
 
 ###############################################################################
-# 8. Кастомизация образа через virt-customize
+# 8. Подготовка команд для virt-customize
 
-virt-customize -a "${TEMPIMAGE}" --install "${PACKAGES}"
-virt-customize -a "${TEMPIMAGE}" --run-command 'systemctl enable qemu-guest-agent'
+VIRT_COMMANDS=()
+
+# Установка пакетов
+VIRT_COMMANDS+=("--install" "${PACKAGES}")
+
+# Включение qemu-guest-agent
+VIRT_COMMANDS+=("--run-command" "systemctl enable qemu-guest-agent")
 
 ###############################################################################
 # 9. Создание пользователей и вставка SSH-ключей
 
 for USER in "${USERS_ARRAY[@]}"; do
-    virt-customize -a "${TEMPIMAGE}" \
-        --run-command "useradd -m -d /home/${USER} -s /bin/bash -G ${SUDOGROUP} ${USER}"
+    # Создание пользователя
+    VIRT_COMMANDS+=("--run-command" "useradd -m -d /home/${USER} -s /bin/bash -G ${SUDOGROUP} ${USER} || true")
 
-    virt-customize -a "${TEMPIMAGE}" \
-        --run-command "mkdir -p /home/${USER}/.ssh"
+    # Создание директории .ssh
+    VIRT_COMMANDS+=("--run-command" "mkdir -p /home/${USER}/.ssh")
 
-    if [ -f "${USER}.pub" ]; then
-        virt-customize -a "${TEMPIMAGE}" --ssh-inject "${USER}:file:${USER}.pub"
+    # Проверяем наличие публичного ключа
+    if [ -f "${SCRIPT_DIR}/${USER}.pub" ]; then
+        VIRT_COMMANDS+=("--ssh-inject" "${USER}:file:${SCRIPT_DIR}/${USER}.pub")
+    elif [ -f "${USER}.pub" ]; then
+        VIRT_COMMANDS+=("--ssh-inject" "${USER}:file:${USER}.pub")
+    else
+        echo "Warning: SSH key file '${USER}.pub' not found, user '${USER}' will have no SSH access" >&2
     fi
 
-    virt-customize -a "${TEMPIMAGE}" \
-        --run-command "chown -R ${USER}:${USER} /home/${USER}"
+    # Установка правильных прав
+    VIRT_COMMANDS+=("--run-command" "chown -R ${USER}:${USER} /home/${USER}")
 done
 
 ###############################################################################
 # 10. Настройка sudo без пароля
 
-echo "%${SUDOGROUP} ALL=(ALL) NOPASSWD:ALL" > /tmp/sudoers-nopasswd
-virt-customize -a "${TEMPIMAGE}" \
-    --copy-in /tmp/sudoers-nopasswd:/etc/sudoers.d/
+SUDOERS_FILE="${TMPDIR}/sudoers-nopasswd"
+echo "%${SUDOGROUP} ALL=(ALL) NOPASSWD:ALL" > "$SUDOERS_FILE"
+chmod 440 "$SUDOERS_FILE"
+
+VIRT_COMMANDS+=("--copy-in" "${SUDOERS_FILE}:/etc/sudoers.d/")
+VIRT_COMMANDS+=("--run-command" "chmod 440 /etc/sudoers.d/sudoers-nopasswd")
 
 ###############################################################################
 # 11. Отключаем парольную аутентификацию в SSH
 
-virt-customize -a "${TEMPIMAGE}" \
-    --run-command 'sed -i "s/#PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config'
-
-virt-customize -a "${TEMPIMAGE}" \
-    --run-command 'sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config'
-
-virt-customize -a "${TEMPIMAGE}" \
-    --run-command 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config'
+VIRT_COMMANDS+=("--run-command" 'sed -i "s/#PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config')
+VIRT_COMMANDS+=("--run-command" 'sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config')
+VIRT_COMMANDS+=("--run-command" 'sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin no/g" /etc/ssh/sshd_config')
 
 ###############################################################################
 # 12. Настройка постоянных маршрутов через cron-задачу
@@ -206,16 +244,28 @@ virt-customize -a "${TEMPIMAGE}" \
 if [ -n "${ROUTES:-}" ]; then
     echo "Configuring static routes via cron job" >&2
 
-    cat << 'EOF' > /tmp/ensure_routes.sh
+    ROUTES_SCRIPT="${TMPDIR}/ensure_routes.sh"
+    cat << 'EOF' > "$ROUTES_SCRIPT"
 #!/bin/bash
 declare -a ROUTES=(
 EOF
 
-    for route in "${ROUTES[@]}"; do
-        echo "\"$route\"" >> /tmp/ensure_routes.sh
-    done
+    # Обработка ROUTES как строки с разделителем или массива
+    if declare -p ROUTES 2>/dev/null | grep -q 'declare -a'; then
+        # ROUTES это массив
+        for route in "${ROUTES[@]}"; do
+            echo "\"$route\"" >> "$ROUTES_SCRIPT"
+        done
+    else
+        # ROUTES это строка - разбиваем по точке с запятой
+        IFS=';' read -r -a ROUTES_TMP <<< "$ROUTES"
+        for route in "${ROUTES_TMP[@]}"; do
+            route=$(echo "$route" | xargs)  # trim whitespace
+            [ -n "$route" ] && echo "\"$route\"" >> "$ROUTES_SCRIPT"
+        done
+    fi
 
-    cat << 'EOF' >> /tmp/ensure_routes.sh
+    cat << 'EOF' >> "$ROUTES_SCRIPT"
 )
 
 for route in "${ROUTES[@]}"; do
@@ -225,32 +275,38 @@ for route in "${ROUTES[@]}"; do
 done
 EOF
 
-    chmod +x /tmp/ensure_routes.sh
-    virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/ensure_routes.sh:/usr/local/bin/
-    virt-customize -a "${TEMPIMAGE}" \
-      --run-command 'chown root:root /usr/local/bin/ensure_routes.sh && chmod 755 /usr/local/bin/ensure_routes.sh'
+    chmod +x "$ROUTES_SCRIPT"
 
-    echo "* * * * * root /usr/local/bin/ensure_routes.sh" > /tmp/cronjob
-    virt-customize -a "${TEMPIMAGE}" --copy-in /tmp/cronjob:/etc/cron.d/
-    virt-customize -a "${TEMPIMAGE}" \
-      --run-command 'chown root:root /etc/cron.d/cronjob && chmod 644 /etc/cron.d/cronjob'
+    VIRT_COMMANDS+=("--copy-in" "${ROUTES_SCRIPT}:/usr/local/bin/")
+    VIRT_COMMANDS+=("--run-command" "chown root:root /usr/local/bin/ensure_routes.sh && chmod 755 /usr/local/bin/ensure_routes.sh")
+
+    CRON_FILE="${TMPDIR}/ensure-routes"
+    echo "* * * * * root /usr/local/bin/ensure_routes.sh" > "$CRON_FILE"
+
+    VIRT_COMMANDS+=("--copy-in" "${CRON_FILE}:/etc/cron.d/")
+    VIRT_COMMANDS+=("--run-command" "chown root:root /etc/cron.d/ensure-routes && chmod 644 /etc/cron.d/ensure-routes")
 fi
 
 ###############################################################################
 # 13. Очищаем machine-id и SSH host keys для уникальности клонов
 
-virt-customize -a "${TEMPIMAGE}" \
-    --run-command 'truncate -s 0 /etc/machine-id' \
-    --run-command 'rm -f /var/lib/dbus/machine-id' \
-    --run-command 'rm -f /etc/ssh/ssh_host_*'
+VIRT_COMMANDS+=("--run-command" "truncate -s 0 /etc/machine-id")
+VIRT_COMMANDS+=("--run-command" "rm -f /var/lib/dbus/machine-id")
+VIRT_COMMANDS+=("--run-command" "rm -f /etc/ssh/ssh_host_*")
 
 ###############################################################################
-# 14. Удаляем старую VM в Proxmox (если была)
+# 14. Выполняем все команды virt-customize за один раз (оптимизация)
+
+echo "Customizing image with ${#VIRT_COMMANDS[@]} operations..." >&2
+virt-customize -a "${TEMPIMAGE}" "${VIRT_COMMANDS[@]}"
+
+###############################################################################
+# 15. Удаляем старую VM в Proxmox (если была)
 
 qm destroy "${VMID}" --destroy-unreferenced-disks 1 --purge 1 || true
 
 ###############################################################################
-# 15. Создаём новую VM и импортируем диск
+# 16. Создаём новую VM и импортируем диск
 
 qm create "${VMID}" --name "${VMNAME}" --memory "${VMMEM}" ${VMSETTINGS}
 qm set   "${VMID}" --description "Template date: ${CURRENT_DATE}"
@@ -302,20 +358,15 @@ qm set "${VMID}" --serial0 socket --vga std
 qm cloudinit update "${VMID}"
 
 ###############################################################################
-# 16. Преобразуем VM в шаблон
+# 17. Преобразуем VM в шаблон
 
 qm template "${VMID}"
 
 ###############################################################################
-# 17. Удаляем старый образ и переименовываем временный
+# 18. Удаляем старый образ и переименовываем временный
 
 rm -f "${IMAGENAME}"
 mv "${TEMPIMAGE}" "${IMAGENAME}"
-
-###############################################################################
-# 18. Логируем время последнего запуска
-
-echo "Last run: ${CURRENT_DATE}" > "${BASENAME}-last-run.txt"
 
 ###############################################################################
 # 19. Финальное сообщение
