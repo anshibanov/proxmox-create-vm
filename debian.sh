@@ -1,20 +1,32 @@
 #!/bin/bash
+set -euo pipefail
 
-export NTFY="ntfy.sh/orange-proxmox-templates"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Notification settings (optional)
+NTFY="${NTFY:-}"
 
 # Execute the cloudinit script and capture the exit code
-./proxmox-cloudinit.sh debian-12-generic-amd64.qcow2 https://cdimage.debian.org/images/cloud/bookworm/latest debian-bookworm-template 9002
+"${SCRIPT_DIR}/proxmox-cloudinit.sh" \
+    debian-12-generic-amd64.qcow2 \
+    https://cdimage.debian.org/images/cloud/bookworm/latest \
+    debian-bookworm-template \
+    9002
 EXIT_CODE=$?
 
-# Send the exit code using ntfy
-if [ $EXIT_CODE -eq 0 ]; then
-    STATUS="Finished debian processing"
-    TAG="heavy_check_mark"
-else
-    STATUS="Debian processing failed with exit code $EXIT_CODE"
-    TAG="x"
+# Send notification if NTFY is configured
+if [ -n "$NTFY" ]; then
+    if [ $EXIT_CODE -eq 0 ]; then
+        STATUS="Finished debian processing"
+        TAG="heavy_check_mark"
+    else
+        STATUS="Debian processing failed with exit code $EXIT_CODE"
+        TAG="x"
+    fi
+
+    curl -s -H "X-Tags: $TAG" \
+         -d "$STATUS" \
+         "$NTFY" || true
 fi
 
-curl -H "X-Tags: $TAG" \
-     -d "$STATUS" \
-     $NTFY
+exit $EXIT_CODE

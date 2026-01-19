@@ -1,1 +1,4 @@
 .env
+*.log
+*-last-run.txt
+*.new
