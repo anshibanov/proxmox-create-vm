@@ -24,8 +24,22 @@ if [ -n "$NTFY" ]; then
         TAG="x"
     fi
 
+    # Collect hypervisor details
+    HV_HOSTNAME=$(hostname -f 2>/dev/null || hostname)
+    HV_EXTERNAL_IP=$(curl -s --max-time 5 ifconfig.me 2>/dev/null || echo "n/a")
+    HV_LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "n/a")
+    HV_WG0_IP=$(ip -4 addr show wg0 2>/dev/null | grep -oP 'inet \K[0-9.]+' || echo "")
+
+    HV_INFO="Hypervisor: ${HV_HOSTNAME}
+External IP: ${HV_EXTERNAL_IP}
+Local IP: ${HV_LOCAL_IP}"
+    [ -n "$HV_WG0_IP" ] && HV_INFO="${HV_INFO}
+WireGuard IP: ${HV_WG0_IP}"
+
     curl -s -H "X-Tags: $TAG" \
-         -d "$STATUS" \
+         -d "${STATUS}
+
+${HV_INFO}" \
          "$NTFY" || true
 fi
 
