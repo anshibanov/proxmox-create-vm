@@ -321,26 +321,26 @@ case "$STORAGE_TYPE" in
     dir)
         # Для Directory storage: storage:VMID/vm-VMID-disk-0.raw
         qm set "${VMID}" \
-            --scsihw virtio-scsi-pci \
+            --scsihw virtio-scsi-single \
             --scsi0 "${STORAGE}:${VMID}/vm-${VMID}-disk-0.raw"
         ;;
     lvmthin|lvm)
         # Для LVM/LVMthin storage: storage:vm-VMID-disk-0
         qm set "${VMID}" \
-            --scsihw virtio-scsi-pci \
+            --scsihw virtio-scsi-single \
             --scsi0 "${STORAGE}:vm-${VMID}-disk-0"
         ;;
     zfspool)
         # Для ZFS storage: storage:vm-VMID-disk-0
         qm set "${VMID}" \
-            --scsihw virtio-scsi-pci \
+            --scsihw virtio-scsi-single \
             --scsi0 "${STORAGE}:vm-${VMID}-disk-0"
         ;;
     *)
         # Универсальный вариант - пытаемся определить автоматически
         echo "Unknown storage type: $STORAGE_TYPE. Attempting automatic detection..." >&2
         qm set "${VMID}" \
-            --scsihw virtio-scsi-pci \
+            --scsihw virtio-scsi-single \
             --scsi0 "${STORAGE}:vm-${VMID}-disk-0"
         ;;
 esac
