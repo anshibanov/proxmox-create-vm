@@ -8,9 +8,9 @@ NTFY="${NTFY:-}"
 
 # Execute the cloudinit script and capture the exit code
 "${SCRIPT_DIR}/proxmox-cloudinit.sh" \
-    noble-server-cloudimg-amd64.img \
-    https://cloud-images.ubuntu.com/noble/current \
-    ubuntu-2404-cloudinit-template \
+    resolute-server-cloudimg-amd64.img \
+    https://cloud-images.ubuntu.com/resolute/current \
+    ubuntu-2604-cloudinit-template \
     9001
 EXIT_CODE=$?
 

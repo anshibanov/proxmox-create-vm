@@ -8,9 +8,9 @@ NTFY="${NTFY:-}"
 
 # Execute the cloudinit script and capture the exit code
 "${SCRIPT_DIR}/proxmox-cloudinit.sh" \
-    debian-12-generic-amd64.qcow2 \
-    https://cdimage.debian.org/images/cloud/bookworm/latest \
-    debian-bookworm-template \
+    debian-13-generic-amd64.qcow2 \
+    https://cdimage.debian.org/images/cloud/trixie/latest \
+    debian-trixie-template \
     9002
 EXIT_CODE=$?
 
